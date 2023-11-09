@@ -8,7 +8,8 @@ import { DataState } from './enum/data-state.enum';
 import { Status } from './enum/status.enum';
 import { NgForm } from '@angular/forms';
 import { Server } from './interface/server';
-import { NotifierService } from 'angular-notifier';
+import { NotificationService } from './service/notification.service';
+// import { NotifierService } from 'angular-notifier';
 
 @Component({
   selector: 'app-root',
@@ -36,14 +37,15 @@ export class AppComponent implements OnInit {
 
   constructor(
     private serverService: ServerService,
-    private notifier: NotifierService
+    private notifier: NotificationService // private notifier: NotifierService
   ) {}
 
   ngOnInit(): void {
     this.appState$ = this.serverService.servers$.pipe(
       map((response) => {
+        this.notifier.onDefault(response.message);
         this.dataSubject.next(response);
-        this.notifier.notify('success', 'You are awesome! Yes I mean that');
+        // this.notifier.notify('success', 'You are awesome! Yes I mean that');
         return {
           dataState: DataState.LOADED_STATE,
           appData: {
@@ -54,6 +56,7 @@ export class AppComponent implements OnInit {
       }),
       startWith({ dataState: DataState.LOADING_STATE }),
       catchError((error: string) => {
+        this.notifier.onError(error);
         return of({ dataState: DataState.ERROR_STATE, error });
       })
     );
@@ -67,6 +70,7 @@ export class AppComponent implements OnInit {
           (server) => server.id === response.data.server.id
         );
         this.dataSubject.value.data.servers[index] = response.data.server;
+        this.notifier.onDefault(response.message);
         this.filterSubject.next('');
         return {
           dataState: DataState.LOADED_STATE,
@@ -79,6 +83,7 @@ export class AppComponent implements OnInit {
       }),
       catchError((error: string) => {
         this.filterSubject.next('');
+        this.notifier.onError(error);
         return of({ dataState: DataState.ERROR_STATE, error });
       })
     );
@@ -97,6 +102,7 @@ export class AppComponent implements OnInit {
             ],
           },
         });
+        this.notifier.onDefault(response.message);
         document.getElementById('closeModal').click();
         this.isLoading.next(false);
         serverForm.resetForm({ status: this.Status.SERVER_DOWN });
@@ -111,6 +117,7 @@ export class AppComponent implements OnInit {
       }),
       catchError((error: string) => {
         this.isLoading.next(false);
+        this.notifier.onError(error);
         return of({ dataState: DataState.ERROR_STATE, error });
       })
     );
@@ -140,7 +147,7 @@ export class AppComponent implements OnInit {
       .filter$(serverStatus, this.dataSubject.value)
       .pipe(
         map((response) => {
-          // this.notifier.onDefault(response.message);
+          this.notifier.onDefault(response.message);
           return { dataState: DataState.LOADED_STATE, appData: response };
         }),
         startWith({
@@ -148,7 +155,7 @@ export class AppComponent implements OnInit {
           appData: this.dataSubject.value,
         }),
         catchError((error: string) => {
-          // this.notifier.onError(error);
+          this.notifier.onError(error);
           return of({ dataState: DataState.ERROR_STATE, error });
         })
       );
@@ -165,6 +172,7 @@ export class AppComponent implements OnInit {
             ),
           },
         });
+        this.notifier.onDefault(response.message);
         return {
           dataState: DataState.LOADED_STATE,
           appData: this.dataSubject.value,
@@ -175,6 +183,7 @@ export class AppComponent implements OnInit {
         appData: this.dataSubject.value,
       }),
       catchError((error: string) => {
+        this.notifier.onError(error);
         return of({ dataState: DataState.ERROR_STATE, error });
       })
     );
@@ -184,6 +193,7 @@ export class AppComponent implements OnInit {
     // to print the data as pdf
     // window.print();
     // to print the data as csv
+    this.notifier.onDefault('Report downloaded');
     let dataType = 'application/vnd.ms-excel.sheet.macroEnabled.12';
     let tableSelect = document.getElementById('servers');
     let tableHtml = tableSelect.outerHTML.replace(/ /g, '%20');
